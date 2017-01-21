@@ -7,12 +7,12 @@
   (let ((items (cons first rest)))
     (setf (cdr (last items)) items)))
 
-(defparameter *position* (cons 0 0))
+(defparameter *origin* (cons 0 0))
+(defparameter *position* *origin*)
 (defparameter *direction* 'n)
 (defparameter *directions* (circular 'n 'e 's 'w))
 
 (defun rotate (facing direction)
-  (format t "rotate: facing ~S direction ~s~%" facing direction)
   (let* ((cords (member facing *directions*))
          (right (cadr cords))
          (left (cadddr cords)))
@@ -21,49 +21,59 @@
       (l left))))
 
 (defun move-ahead (position facing distance)
-  (format t "move-ahead: position ~S facing ~S distance ~s~%"
-          position facing distance)
+  (car (last (track-ahead position facing distance))))
+
+(defun track-ahead (position facing distance)
   (let ((x (car position))
         (y (cdr position)))
-    (case facing
-      (n (cons x (+ y distance)))
-      (e (cons (+ x distance) y))
-      (s (cons x (- y distance)))
-      (w (cons (- x distance) y)))))
+    (loop for i from 1 to distance
+          collect (case facing
+                    (n (cons x (+ y i)))
+                    (e (cons (+ x i) y))
+                    (s (cons x (- y i)))
+                    (w (cons (- x i) y))))))
 
 (defun move-1-step (position facing direction distance)
-  (format t "position: ~S facing: ~S direction: ~S distance: ~S~%"
-          position facing direction distance)
   (let* ((new-facing-direction (rotate facing direction))
-         (new-position (move-ahead position new-facing-direction distance)))
-    (format t "new position: ~S new-facing-direction: ~S~%"
-            new-position new-facing-direction)
-    (list new-position new-facing-direction)))
+         (track (track-ahead position new-facing-direction distance)))
+    (cons track new-facing-direction)))
 
 (defun taxicab-distance (a b)
   (let ((abs-x (abs (- (car a) (car b))))
         (abs-y (abs (- (cdr a) (cdr b)))))
     (+ abs-x abs-y)))
 
+(defun find-first-duplicate (lst)
+  (let ((head (car lst))
+        (tail (cdr lst)))
+    (cond
+      ((null tail) nil)
+      ((find head tail :test #'equal) head)
+      (t (find-first-duplicate tail)))))
+
 (defun walk-the-problem (steps)
-  (setf *position* (cons 0 0))
+  (setf *position* *origin*)
   (setf *direction* 'n)
-  (format t "Walking the problem from ~S facing ~S~%~S~%"
-          *position* *direction* steps)
-  (mapc (lambda (step)
-          (format t "~%Step ~S: from ~S facing ~S~%"
-                  step *position* *direction*)
-          (let* ((turn-direction (car step))
-                 (distance (cdr step))
-                 (next (move-1-step *position* *direction*
-                                    turn-direction distance)))
-            (setf *position* (car next))
-            (setf *direction* (cadr next))
-            (format t "Next step: ~S~%position: ~S~%direction: ~S~%"
-                    next *position* *direction*)
-            next)) steps)
-  (let ((distance (taxicab-distance (cons 0 0) *position*)))
-    (format t "~%The final distance is ~D~%" distance)))
+  (let* ((positions (mapcar (lambda (step)
+                   (let* ((turn-direction (car step))
+                          (distance (cdr step))
+                          (next (move-1-step *position* *direction*
+                                             turn-direction distance))
+                          (new-position (car (last (car next)))))
+                     (setf *position* new-position)
+                     (setf *direction* (cdr next))
+                     (format t "Next step: ~S~%" next)
+                     next)) steps))
+         (first-duplicate (find-first-duplicate
+                           (cons *origin*
+                                 (reduce #'append (mapcar #'car positions)))))
+         (distance (taxicab-distance *origin* *position*)))
+    (format t "~%The final distance is ~D~%" distance)
+    (if first-duplicate
+        (format t "~%The final distance from ~S is ~D~%"
+                first-duplicate (taxicab-distance first-duplicate *origin*)))))
 
 (walk-the-problem *input*)
 
+;; (defparameter *sample* (list (cons 'r 8) (cons 'r 4) (cons 'r 4) (cons 'r 8)))
+;; (walk-the-problem *sample*)
