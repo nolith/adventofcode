@@ -27,6 +27,10 @@ namespace csharp
               var d3_plus_result = new Day3().solutionPlus();
               Console.WriteLine(d3_plus_result);
               break;
+            case "4":
+              var d4_result = new Day4().solution();
+              Console.WriteLine(d4_result);
+              break;
             default:
               Console.WriteLine("Unlknown problem {0}", problem);
               Environment.Exit(2);
