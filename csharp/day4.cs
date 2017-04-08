@@ -28,6 +28,24 @@ namespace csharp {
         return checksum != calculateChecksum();
       }
 
+      internal string real_name {
+        get {
+          // ugly but working
+          var n = name.Select(c => {
+            if ( c == '-')
+              return ' ';
+            var shift = c;
+            for(int i = 0; i < id; i++) {
+              shift++;
+              if(shift > 'z')
+                shift = 'a';
+            }
+            return (char)shift;
+          }).ToArray();
+          return new String(n);
+        }
+      }
+
       internal string calculateChecksum() {
         return new String(name
                   .Where(c => c != '-')
@@ -50,8 +68,8 @@ namespace csharp {
 
       public string ToString() {
         return string.Format(
-          "[name: {0}, id: {1}, checksum: {2}, calculated_checksum: {3}, decoy: {4}]",
-          name, id, checksum, calculateChecksum(), isDecoy()
+          "[name: {0}, id: {1}, checksum: {2}, calculated_checksum: {3}, decoy: {4}, real_name: {5}]",
+          name, id, checksum, calculateChecksum(), isDecoy(), real_name
         );
       }
       internal static Room FromLine(string line) {
